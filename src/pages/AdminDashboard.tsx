@@ -6,6 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { toast } from '@/hooks/use-toast';
+import { useDatabase } from '@/hooks/useDatabase';
+import { AddSubscriberDialog } from '@/components/AddSubscriberDialog';
+import { ServiceRequestActions } from '@/components/ServiceRequestActions';
+import { PermissionManager } from '@/components/PermissionManager';
 import { 
   Users, 
   Settings, 
@@ -19,89 +23,34 @@ import {
   Phone,
   MapPin,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Edit,
+  UserPlus
 } from 'lucide-react';
 
-interface Subscriber {
-  id: string;
-  name: string;
-  phone: string;
-  location: string;
-  package: string;
-  status: 'active' | 'expired' | 'suspended';
-  endDate: string;
-}
-
-interface ServiceRequest {
-  id: string;
-  subscriberName: string;
-  type: 'technical' | 'upgrade' | 'relocation' | 'router';
-  description: string;
-  date: string;
-  status: 'pending' | 'in-progress' | 'completed';
-}
+// Interfaces are now imported from useDatabase hook
 
 const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  
+  const {
+    subscribers,
+    serviceRequests,
+    payments,
+    loading,
+    addSubscriber,
+    updateServiceRequestStatus,
+    refreshData,
+  } = useDatabase();
 
   if (!user || user.role !== 'admin') {
     return null;
   }
 
-  // Mock data
-  const subscribers: Subscriber[] = [
-    {
-      id: '1',
-      name: 'نور محمد',
-      phone: '0599123456',
-      location: 'رام الله',
-      package: 'باقة المتميز - 60 ميجا',
-      status: 'active',
-      endDate: '2024-08-15'
-    },
-    {
-      id: '2',
-      name: 'أحمد علي',
-      phone: '0598765432',
-      location: 'نابلس',
-      package: 'باقة الأساسي - 30 ميجا',
-      status: 'active',
-      endDate: '2024-07-30'
-    },
-    {
-      id: '3',
-      name: 'سارة حسن',
-      phone: '0597654321',
-      location: 'الخليل',
-      package: 'باقة الفائق - 100 ميجا',
-      status: 'expired',
-      endDate: '2024-06-15'
-    }
-  ];
-
-  const serviceRequests: ServiceRequest[] = [
-    {
-      id: '1',
-      subscriberName: 'نور محمد',
-      type: 'technical',
-      description: 'انقطاع في الاتصال',
-      date: '2024-07-20',
-      status: 'pending'
-    },
-    {
-      id: '2',
-      subscriberName: 'أحمد علي',
-      type: 'upgrade',
-      description: 'طلب ترقية إلى 60 ميجا',
-      date: '2024-07-19',
-      status: 'in-progress'
-    }
-  ];
-
   const filteredSubscribers = subscribers.filter(sub => 
-    sub.name.includes(searchTerm) || sub.phone.includes(searchTerm)
+    sub.full_name.includes(searchTerm) || sub.phone.includes(searchTerm)
   );
 
   const handleLogout = () => {
@@ -112,17 +61,13 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const handleAddSubscriber = () => {
-    toast({
-      title: "إضافة مشترك جديد",
-      description: "سيتم فتح نموذج إضافة مشترك جديد",
-    });
-  };
-
   const handleGenerateInvoice = () => {
+    // In a real implementation, this would generate and download an invoice
+    const monthlyRevenue = subscribers.reduce((total, sub) => total + sub.monthly_fee, 0);
+    
     toast({
-      title: "إنشاء فاتورة",
-      description: "سيتم إنشاء فاتورة جديدة",
+      title: "تم إنشاء الفاتورة",
+      description: `تم إنشاء فاتورة بإجمالي ₪${monthlyRevenue.toFixed(2)}`,
     });
   };
 
@@ -303,23 +248,20 @@ const AdminDashboard: React.FC = () => {
                 <CardTitle>إجراءات سريعة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Button
-                    onClick={handleAddSubscriber}
-                    className="h-16 flex items-center gap-3 gradient-primary shadow-primary"
-                  >
-                    <Plus className="h-5 w-5" />
-                    إضافة مشترك جديد
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleGenerateInvoice}
-                    className="h-16 flex items-center gap-3"
-                  >
-                    <FileText className="h-5 w-5" />
-                    إنشاء فاتورة يدوية
-                  </Button>
-                </div>
+                 <div className="grid md:grid-cols-2 gap-4">
+                   <AddSubscriberDialog 
+                     onAddSubscriber={addSubscriber}
+                     isLoading={loading}
+                   />
+                   <Button
+                     variant="outline"
+                     onClick={handleGenerateInvoice}
+                     className="h-16 flex items-center gap-3"
+                   >
+                     <FileText className="h-5 w-5" />
+                     إنشاء فاتورة يدوية
+                   </Button>
+                 </div>
               </CardContent>
             </Card>
           </div>
@@ -338,10 +280,10 @@ const AdminDashboard: React.FC = () => {
                   className="pr-10"
                 />
               </div>
-              <Button onClick={handleAddSubscriber} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                إضافة مشترك
-              </Button>
+               <AddSubscriberDialog 
+                 onAddSubscriber={addSubscriber}
+                 isLoading={loading}
+               />
             </div>
 
             <div className="grid gap-4">
@@ -353,31 +295,31 @@ const AdminDashboard: React.FC = () => {
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <Users className="h-5 w-5 text-primary" />
                         </div>
-                        <div>
-                          <p className="font-semibold">{subscriber.name}</p>
-                          <p className="text-sm text-muted-foreground">#{subscriber.id}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{subscriber.phone}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{subscriber.location}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Wifi className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{subscriber.package}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{subscriber.endDate}</span>
-                      </div>
+                         <div>
+                           <p className="font-semibold text-foreground">{subscriber.full_name}</p>
+                           <p className="text-sm text-muted-foreground">#{subscriber.id}</p>
+                         </div>
+                       </div>
+                       
+                       <div className="flex items-center gap-2">
+                         <Phone className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm text-foreground">{subscriber.phone}</span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2">
+                         <MapPin className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm text-foreground">{subscriber.location}</span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2">
+                         <Wifi className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm text-foreground">{subscriber.package_name} - {subscriber.package_speed}</span>
+                       </div>
+                       
+                       <div className="flex items-center gap-2">
+                         <Calendar className="h-4 w-4 text-muted-foreground" />
+                         <span className="text-sm text-foreground">{subscriber.end_date}</span>
+                       </div>
                       
                       <div className="flex items-center justify-end">
                         {getStatusBadge(subscriber.status)}
@@ -397,29 +339,33 @@ const AdminDashboard: React.FC = () => {
               {serviceRequests.map((request) => (
                 <Card key={request.id} className="shadow-card border-0">
                   <CardContent className="p-6">
-                    <div className="grid md:grid-cols-5 gap-4 items-center">
-                      <div>
-                        <p className="font-semibold">{request.subscriberName}</p>
-                        <p className="text-sm text-muted-foreground">#{request.id}</p>
-                      </div>
-                      
-                      <div>
-                        <Badge variant="outline">{getRequestTypeText(request.type)}</Badge>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm">{request.description}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{request.date}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-end">
-                        {getRequestStatusBadge(request.status)}
-                      </div>
-                    </div>
+                     <div className="grid md:grid-cols-4 gap-4 items-center">
+                       <div>
+                         <p className="font-semibold text-foreground">
+                           {request.subscriber?.full_name || 'غير محدد'}
+                         </p>
+                         <p className="text-sm text-muted-foreground">#{request.id}</p>
+                       </div>
+                       
+                       <div>
+                         <Badge variant="outline">{getRequestTypeText(request.request_type)}</Badge>
+                       </div>
+                       
+                       <div>
+                         <p className="text-sm text-foreground">{request.description}</p>
+                         <p className="text-xs text-muted-foreground">
+                           {new Date(request.created_at).toLocaleDateString('ar')}
+                         </p>
+                       </div>
+                       
+                       <div className="flex items-center justify-end">
+                         <ServiceRequestActions
+                           request={request}
+                           onUpdateStatus={updateServiceRequestStatus}
+                           isLoading={loading}
+                         />
+                       </div>
+                     </div>
                   </CardContent>
                 </Card>
               ))}
@@ -432,13 +378,70 @@ const AdminDashboard: React.FC = () => {
           <div className="space-y-6">
             <Card className="shadow-card border-0">
               <CardHeader>
-                <CardTitle>إدارة المدفوعات</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>إدارة المدفوعات</span>
+                  <Badge variant="outline">
+                    {payments.length} دفعة
+                  </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>ستتم إضافة إدارة المدفوعات قريباً</p>
-                </div>
+                {payments.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>لا توجد مدفوعات حتى الآن</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {payments.map((payment) => (
+                      <Card key={payment.id} className="border">
+                        <CardContent className="p-4">
+                          <div className="grid md:grid-cols-4 gap-4 items-center">
+                            <div>
+                              <p className="font-semibold text-foreground">
+                                {payment.subscriber?.full_name || 'غير محدد'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">#{payment.id}</p>
+                            </div>
+                            
+                            <div>
+                              <p className="text-lg font-bold text-foreground">₪{payment.amount}</p>
+                              <p className="text-sm text-muted-foreground">{payment.payment_method}</p>
+                            </div>
+                            
+                            <div>
+                              <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'}>
+                                {payment.status === 'completed' ? 'مكتمل' : 
+                                 payment.status === 'pending' ? 'في الانتظار' :
+                                 payment.status === 'failed' ? 'فاشل' : 'مسترد'}
+                              </Badge>
+                            </div>
+                            
+                            <div className="text-sm text-muted-foreground">
+                              {payment.payment_date ? 
+                                new Date(payment.payment_date).toLocaleDateString('ar') :
+                                'لم يتم الدفع بعد'
+                              }
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Permission Management */}
+            <Card className="shadow-card border-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  إدارة الصلاحيات والأذونات
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PermissionManager />
               </CardContent>
             </Card>
           </div>
