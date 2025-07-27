@@ -49,11 +49,59 @@ const Login: React.FC = () => {
     setIsLoading(false);
   };
 
-  const handleForgotPassword = () => {
-    toast({
-      title: "استعادة كلمة المرور",
-      description: "سيتم إرسال طلب استعادة كلمة المرور إلى الإدارة على info.speedx.ps@gmail.com",
-    });
+  const handleForgotPassword = async () => {
+    const email = prompt('أدخل عنوان البريد الإلكتروني لاستعادة كلمة المرور:');
+    
+    if (!email) {
+      return;
+    }
+
+    if (!email.includes('@')) {
+      toast({
+        title: "خطأ في البريد الإلكتروني",
+        description: "يرجى إدخال عنوان بريد إلكتروني صحيح",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Call the password reset edge function
+      const response = await fetch(`https://bhduqvxuhdrhwatryscc.supabase.co/functions/v1/password-reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZHVxdnh1aGRyaHdhdHJ5c2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0ODI1NDEsImV4cCI6MjA2OTA1ODU0MX0.AePyKJhQ3mDupo9L-f0pPS0QEl8-YJfIxG_WnLSAGrU`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: "تم إرسال البريد الإلكتروني",
+          description: "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني",
+        });
+      } else {
+        toast({
+          title: "خطأ في استعادة كلمة المرور",
+          description: result.error || "حدث خطأ أثناء إرسال بريد استعادة كلمة المرور",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "خطأ في الاتصال",
+        description: "حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

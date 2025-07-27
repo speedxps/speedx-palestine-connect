@@ -237,6 +237,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      handle_password_reset_request: {
+        Args: { email_address: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
