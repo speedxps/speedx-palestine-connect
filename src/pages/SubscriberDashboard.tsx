@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { toast } from '@/hooks/use-toast';
+import { useDatabase } from '@/hooks/useDatabase';
 import { 
   User, 
   Phone, 
@@ -22,6 +23,7 @@ import {
 
 const SubscriberDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const { createServiceRequest, loading } = useDatabase();
 
   if (!user || user.role !== 'subscriber') {
     return null;
@@ -32,7 +34,7 @@ const SubscriberDashboard: React.FC = () => {
   const today = new Date();
   const daysRemaining = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-  const handleServiceRequest = (type: string) => {
+  const handleServiceRequest = async (type: string) => {
     const requestTypes = {
       'technical': 'طلب الدعم الفني',
       'upgrade': 'طلب ترقية السرعة',
@@ -40,10 +42,18 @@ const SubscriberDashboard: React.FC = () => {
       'router': 'طلب راوتر جديد'
     };
 
-    toast({
-      title: "تم إرسال الطلب",
-      description: `تم تسجيل ${requestTypes[type as keyof typeof requestTypes]} بنجاح. سيتم التواصل معك قريباً.`,
-    });
+    try {
+      // For now, we'll use a mock subscriber ID since we don't have real auth integration yet
+      // In a real implementation, this would come from the authenticated user's subscriber record
+      await createServiceRequest({
+        subscriber_id: 'mock-subscriber-id', // This should be replaced with actual subscriber ID
+        request_type: type as any,
+        description: `طلب ${requestTypes[type as keyof typeof requestTypes]} من المشترك ${user?.name}`,
+        priority: 'medium'
+      });
+    } catch (error) {
+      // Error is already handled in the hook
+    }
   };
 
   const handleLogout = () => {
@@ -178,6 +188,7 @@ const SubscriberDashboard: React.FC = () => {
                     variant="outline"
                     className="h-20 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={() => handleServiceRequest('technical')}
+                    disabled={loading}
                   >
                     <Settings className="h-6 w-6" />
                     <span>الدعم الفني</span>
@@ -187,6 +198,7 @@ const SubscriberDashboard: React.FC = () => {
                     variant="outline"
                     className="h-20 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={() => handleServiceRequest('upgrade')}
+                    disabled={loading}
                   >
                     <TrendingUp className="h-6 w-6" />
                     <span>ترقية السرعة</span>
@@ -196,6 +208,7 @@ const SubscriberDashboard: React.FC = () => {
                     variant="outline"
                     className="h-20 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={() => handleServiceRequest('relocation')}
+                    disabled={loading}
                   >
                     <Truck className="h-6 w-6" />
                     <span>تغيير الموقع</span>
@@ -205,6 +218,7 @@ const SubscriberDashboard: React.FC = () => {
                     variant="outline"
                     className="h-20 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={() => handleServiceRequest('router')}
+                    disabled={loading}
                   >
                     <Router className="h-6 w-6" />
                     <span>راوتر جديد</span>

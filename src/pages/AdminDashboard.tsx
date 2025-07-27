@@ -10,6 +10,7 @@ import { useDatabase } from '@/hooks/useDatabase';
 import { AddSubscriberDialog } from '@/components/AddSubscriberDialog';
 import { ServiceRequestActions } from '@/components/ServiceRequestActions';
 import { PermissionManager } from '@/components/PermissionManager';
+import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 import { 
   Users, 
   Settings, 
@@ -58,16 +59,6 @@ const AdminDashboard: React.FC = () => {
     toast({
       title: "تم تسجيل الخروج",
       description: "شكراً لاستخدام منصة SpeedX الإدارية",
-    });
-  };
-
-  const handleGenerateInvoice = () => {
-    // In a real implementation, this would generate and download an invoice
-    const monthlyRevenue = subscribers.reduce((total, sub) => total + sub.monthly_fee, 0);
-    
-    toast({
-      title: "تم إنشاء الفاتورة",
-      description: `تم إنشاء فاتورة بإجمالي ₪${monthlyRevenue.toFixed(2)}`,
     });
   };
 
@@ -253,14 +244,7 @@ const AdminDashboard: React.FC = () => {
                      onAddSubscriber={addSubscriber}
                      isLoading={loading}
                    />
-                   <Button
-                     variant="outline"
-                     onClick={handleGenerateInvoice}
-                     className="h-16 flex items-center gap-3"
-                   >
-                     <FileText className="h-5 w-5" />
-                     إنشاء فاتورة يدوية
-                   </Button>
+                    <InvoiceGenerator subscribers={subscribers} />
                  </div>
               </CardContent>
             </Card>
