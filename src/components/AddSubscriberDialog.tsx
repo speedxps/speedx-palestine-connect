@@ -60,8 +60,11 @@ export const AddSubscriberDialog: React.FC<AddSubscriberDialogProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with data:', formData);
+    
     try {
       await onAddSubscriber(formData);
+      console.log('Subscriber added successfully, closing dialog');
       setOpen(false);
       setFormData({
         full_name: '',
@@ -75,7 +78,8 @@ export const AddSubscriberDialog: React.FC<AddSubscriberDialogProps> = ({
         start_date: new Date().toISOString().split('T')[0],
       });
     } catch (error) {
-      // Error is handled in the hook
+      console.error('Error in handleSubmit:', error);
+      // Error is already handled in the hook
     }
   };
 

@@ -106,18 +106,24 @@ export const useDatabase = () => {
     }
   };
 
-  // Add new subscriber
   const addSubscriber = async (subscriberData: Omit<Subscriber, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('Adding subscriber:', subscriberData);
+      
       const { data, error } = await supabase
         .from('subscribers')
         .insert([subscriberData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Subscriber added successfully:', data);
       setSubscribers(prev => [data as Subscriber, ...prev]);
+      
       toast({
         title: "تم إضافة المشترك",
         description: "تم إضافة المشترك الجديد بنجاح",
