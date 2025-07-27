@@ -107,8 +107,10 @@ export const useDatabase = () => {
   };
 
   const addSubscriber = async (subscriberData: Omit<Subscriber, 'id' | 'created_at' | 'updated_at'>) => {
+    console.log('addSubscriber called with:', subscriberData);
+    
     try {
-      console.log('Adding subscriber:', subscriberData);
+      console.log('Attempting to insert into database...');
       
       const { data, error } = await supabase
         .from('subscribers')
@@ -116,22 +118,30 @@ export const useDatabase = () => {
         .select()
         .single();
 
+      console.log('Database response - data:', data, 'error:', error);
+
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('Supabase error details:', error);
         throw error;
       }
 
-      console.log('Subscriber added successfully:', data);
-      setSubscribers(prev => [data as Subscriber, ...prev]);
+      console.log('Successfully inserted subscriber:', data);
+      
+      // Update the local state
+      setSubscribers(prev => {
+        console.log('Updating subscribers state, previous count:', prev.length);
+        return [data as Subscriber, ...prev];
+      });
       
       toast({
         title: "تم إضافة المشترك",
         description: "تم إضافة المشترك الجديد بنجاح",
       });
       
+      console.log('addSubscriber completed successfully');
       return data;
     } catch (error) {
-      console.error('Error adding subscriber:', error);
+      console.error('Error in addSubscriber:', error);
       toast({
         title: "خطأ في إضافة المشترك",
         description: "حدث خطأ أثناء إضافة المشترك الجديد",

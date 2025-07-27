@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
+import { toast } from '@/hooks/use-toast';
 import { Subscriber } from '@/hooks/useDatabase';
 
 interface AddSubscriberDialogProps {
@@ -62,9 +63,21 @@ export const AddSubscriberDialog: React.FC<AddSubscriberDialogProps> = ({
     e.preventDefault();
     console.log('Form submitted with data:', formData);
     
+    // Validate required fields
+    if (!formData.full_name || !formData.phone || !formData.location || !formData.package_name || !formData.end_date) {
+      toast({
+        title: "خطأ في البيانات",
+        description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      await onAddSubscriber(formData);
-      console.log('Subscriber added successfully, closing dialog');
+      console.log('Calling onAddSubscriber...');
+      const result = await onAddSubscriber(formData);
+      console.log('Subscriber added successfully:', result);
+      
       setOpen(false);
       setFormData({
         full_name: '',
